@@ -1,0 +1,43 @@
+pool:
+  name: 98.70.33.114
+
+variables:
+  workingDirectory: '$(Agent.BuildDirectory)\my project with spaces' # fails here as pom.xml file contains space in path
+
+steps:
+- script: |
+    mkdir "$(workingDirectory)"
+    xcopy /E /I /Y "$(Build.SourcesDirectory)\*" "$(workingDirectory)\"
+  displayName: 'Prepare working directory with spaces'
+
+- task: JFrogMaven@1
+  inputs:
+    mavenPomFile: '$(workingDirectory)\pom.xml'  
+    goals: 'deploy'
+    artifactoryResolverService: 'artifactoryConnection'
+    targetResolveReleaseRepo: 'maven-azure-libs-release'
+    targetResolveSnapshotRepo: 'maven-azure-libs-snapshot'
+    artifactoryDeployService: 'artifactoryConnection'
+    targetDeployReleaseRepo: 'maven-azure-libs-release-local'
+    targetDeploySnapshotRepo: 'maven-azure-libs-snapshot-local'
+    collectBuildInfo: true
+    buildName: '$(Build.DefinitionName)'
+    buildNumber: '$(Build.BuildNumber)'
+    javaHomeOption: 'JDKVersion'
+  displayName: 'Run JFrog Maven Build'
+- task: JFrogPublishBuildInfo@1
+  inputs:
+    artifactoryConnection: 'artifactoryConnection'
+    buildName: '$(Build.DefinitionName)'
+    buildNumber: '$(Build.BuildNumber)'
+- task: JFrogBuildPromotion@1
+  inputs:
+    artifactoryConnection: 'artifactoryConnection'
+    buildName: '$(Build.DefinitionName)'
+    buildNumber: '$(Build.BuildNumber)'
+    targetRepo: 'maven-azure-target-repo-local'
+    status: 'Released'
+    sourceRepo: 'maven-azure-libs-release-local' # fails here as artifacts are not present in release local
+    includeDependencies: true
+    copy: true
+    dryRun: false
