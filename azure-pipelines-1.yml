@@ -1,5 +1,5 @@
 pool:
-  name: 98.70.33.114
+  name: windwos-az-server-19
 
 variables:
   workingDirectory: '$(Agent.BuildDirectory)\my project with spaces' # fails here as pom.xml file contains space in path
